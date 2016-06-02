@@ -71,11 +71,19 @@ function! metarw#git#read(fakepath)  "{{{2
       " 'git:{commit-ish}:' or 'git:{commit-ish}:{tree}/'?
       let result = s:read_tree(_)
     else  " 'git:{commit-ish}:path'?
-      let result = s:read_blob(_)
+      if stridx(_.given_commit_ish, '..') == -1 " single commit
+        let result = s:read_blob(_)
+      else
+        let result = s:read_log(_)
+      endif
     endif
   else  " 'git:...'?
     if _.given_commit_ish != ''  " 'git:{commit-ish}'?
-      let result = s:read_commit(_)
+      if stridx(_.given_commit_ish, '..') == -1 " single commit
+        let result = s:read_commit(_)
+      else " commit ranges
+        let result = s:read_log(_)
+      endif
     else  " 'git:'?
       let result = s:read_branches(_)
     endif
@@ -267,6 +275,19 @@ function! s:read_commit(_)  "{{{2
   \       printf('!git --git-dir=%s show %s',
   \              shellescape(a:_.git_dir),
   \              shellescape(a:_.commit_ish))]
+endfunction
+
+
+
+
+function! s:read_log(_)  "{{{2
+  return ['read',
+        \       printf('!git --git-dir=%s log %s %s',
+        \              shellescape(a:_.git_dir),
+        \              shellescape(a:_.commit_ish),
+        \              a:_.path_given_p
+        \              ? shellescape(a:_.incomplete_path)
+        \              : '')]
 endfunction
 
 
